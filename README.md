@@ -25,8 +25,8 @@ To get started on **Visual Studio 2019**:
   - .NET Core cross-platform development
 2. Open `plugin_name.sln` in Visual Studio 2019.
 3. (optional) Make changes in Entities & Actions schemas into `.\models.xml` file in the root of the repo
-4. Run `.\build_for_deploy.cmd` from the root of the repo to build the code. This also generate new Entities & Actions classes from `.\models.xml` needed to build new version of Plugin.
-5. Open `\bin\build` folder and zip all files to one package `plugin_name.zip`.
+4. Run `.\build_for_deploy.cmd` from the root of the repo to build the code. This also will generate new Entities & Actions classes from `.\models.xml` needed to build new version of Plugin.
+5. Open `\bin\Deploy` folder and use file `plugin_name.zip` that consists of all files from build.
 
 ### Building MSBuild in Unix (Mac & Linux)
 
@@ -37,12 +37,12 @@ MSBuild can be run on Unix systems that support .NET Core. Set-up instructions c
 To complete this operation, you will need to log on to mef.dev platform. The logon process is the registration required, to register please follow the link [invite to preview](https://preview.mef.dev/rflnk/9fJaM6YPHEo5Dc1pCMTHO5ynrm2OON6atMe3df%2fSaM5F%2bJeD%2bDywFisySLXJiGv4)
 1. Login to preview version of mef.dev platform on preview.mef.dev
 2. [Create](https://preview.mef.dev/store/service/create) new package `plugin_name` into mef.dev platform - the minimal set of information is:
-   - PLUGIN MEFNAME - input `plugin_name`
-   - ALIAS - input `plugin_name`
-   - SERVICE NAME - input `plugin_name`
+   - PLUGIN MEFNAME - the unique (within the ALIAS) Plugin name, must be equal to the namespace from the build solution above (in this case value = `plugin_name`)
+   - ALIAS - a unique logical name that unites all entities and actions of one subject area (business domain), if unknown - please input value in `ddmmyyhhmm` format
+   - SERVICE NAME - the unique friendly Plugin name for UI, if unknown - please input specific to your build `plugin_name`
 	
-3. Upload build `plugin_name.zip` to plugin package, created on step 2. This also register new version of plugin and start the generation process of technical specification for future review.
-5. After click SAVE button, mef.dev platform will run this version of plugin and you can use it.
+3. Upload created at building step 5 `plugin_name.zip` to plugin package, created on step 2. This also register new version of plugin and start the generation process of technical specification for future review.
+5. After click SAVE button, mef.dev platform will run this version of plugin and you can use it after the rights assessment procedure.
 
 #### Getting Started to contribute
 
