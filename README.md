@@ -34,7 +34,7 @@ MSBuild can be run on Unix systems that support .NET Core. Set-up instructions c
 
 ## Onboarding Plugin to MEF.DEV platform
 
-To complete this operation, you will need to log on to mef.dev platform. The logon process is the registration required, to register please follow the link https://preview.mef.dev/rflnk/9fJaM6YPHEo5Dc1pCMTHO5ynrm2OON6atMe3df%2fSaM5F%2bJeD%2bDywFisySLXJiGv4)
+To complete this operation, you will need to log on to mef.dev platform. The logon process is the registration required, to register please follow the link [invite to preview](https://preview.mef.dev/rflnk/9fJaM6YPHEo5Dc1pCMTHO5ynrm2OON6atMe3df%2fSaM5F%2bJeD%2bDywFisySLXJiGv4)
 1. Login to preview version of mef.dev platform on preview.mef.dev
 2. Create new package `plugin_name` into mef.dev platform by link https://preview.mef.dev/store/service/create - the minimal set of information is:
 	PLUGIN MEFNAME - input `plugin_name`
