@@ -42,6 +42,16 @@ To complete this operation, you will need to log on to mef.dev platform. The log
    - SERVICE NAME - the unique friendly Plugin name for UI, if unknown - please input specific to your build `plugin_name`
 	
 3. Upload created at building step 5 `plugin_name.zip` to plugin package, created on step 2. This also register new version of plugin and start the generation process of technical specification for future review.
+4. Create configuration for plugin to connect it to database - as business logic for models:	
+	{
+  		"RuntimeState": "Run",
+ 		"StartTime": "dd.mm.yyyy hh:ss",
+  		"RuntimeStateDescription": "503 http code details description for manual operation with plugin",
+  		"ConnectionStrings": {
+   			"ConnectionString": "Server={servername};Database={database_name};Trusted_Connection=Yes;MultipleActiveResultSets=true"
+	  	},
+  		"DeadlockRetryCount" : 3
+	}
 5. After click SAVE button, mef.dev platform will run this version of plugin and you can use it after the rights assessment procedure.
 
 #### Getting Started to contribute
