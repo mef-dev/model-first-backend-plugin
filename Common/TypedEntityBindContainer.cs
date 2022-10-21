@@ -1,6 +1,6 @@
-﻿using UCP.Common.Plugin.Attributes;
+using UCP.Common.Plugin.Attributes;
 
-namespace Natec.Entities
+namespace Bss.Entities
 {
     [DocIgnore]
     public class TypedEntityBindContainer<TSet_CallModel_Request,

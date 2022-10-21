@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UCP.Common.Plugin;
 using System.Linq;
 using UCP.Common.Plugin.Attributes;
 
-namespace Natec.Entities
+namespace Bss.Entities
 {
     [DocIgnore]
     public class ModelFactory
@@ -218,3 +218,4 @@ namespace Natec.Entities
         }
     }
 }
+

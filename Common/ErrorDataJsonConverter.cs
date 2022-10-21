@@ -1,9 +1,9 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using UCP.Common.Plugin.Attributes;
 
-namespace Natec.Entities
+namespace Bss.Entities
 {
     [DocIgnore]
     public class ErrorDataJsonConverter : JsonConverter

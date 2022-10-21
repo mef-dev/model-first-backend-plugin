@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using UCP.Common.Plugin.Attributes;
 
-namespace Natec.Entities
+namespace Bss.Entities
 {
     [DocIgnore]
     public class EmptyCallProcedureModel : ICallProcedureModel<EmptyCallProcedureModel>

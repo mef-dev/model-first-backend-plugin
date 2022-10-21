@@ -1,9 +1,11 @@
-﻿using UCP.Common.Plugin.Attributes;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
-namespace Natec.Entities
+namespace Bss.Entities
 {
-    [DocIgnore]
     public class EmptyModel
     {
     }
 }
+

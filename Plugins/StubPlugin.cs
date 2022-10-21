@@ -1,4 +1,4 @@
-﻿using FluentSiren.Models;
+using FluentSiren.Models;
 using Newtonsoft.Json.Schema;
 using System;
 using System.Collections.Generic;
@@ -7,7 +7,7 @@ using UCP.Common.Plugin;
 using UCP.Common.Plugin.Attributes;
 using UCP.Common.Plugin.Services;
 
-namespace Natec.Entities
+namespace Bss.Entities
 {
     [DocIgnore]
     internal sealed class StubPlugin : IBackendPlugin
@@ -54,3 +54,4 @@ namespace Natec.Entities
         }
     }
 }
+

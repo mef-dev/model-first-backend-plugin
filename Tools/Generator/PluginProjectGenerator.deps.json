@@ -6,9 +6,10 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v3.1": {
-      "PluginProjectGenerator/1.0.0": {
+      "PluginProjectGenerator/1.2.0": {
         "dependencies": {
-          "ProjectSourceGenerator": "1.0.6"
+          "ProjectSourceGenerator": "1.2.1",
+          "YamlCatalog": "1.0.0"
         },
         "runtime": {
           "PluginProjectGenerator.dll": {}
@@ -26,45 +27,18 @@
         }
       },
       "Microsoft.NETCore.Platforms/3.1.0": {},
-      "Microsoft.VisualStudio.SDK.EmbedInteropTypes/15.0.34": {},
-      "Microsoft.VisualStudio.TextTemplating.15.0/16.10.31320.204": {
-        "dependencies": {
-          "Microsoft.VisualStudio.TextTemplating.Interfaces.11.0": "16.10.31320.204"
-        },
-        "runtime": {
-          "lib/net45/Microsoft.VisualStudio.TextTemplating.15.0.dll": {
-            "assemblyVersion": "16.0.0.0",
-            "fileVersion": "16.0.31320.204"
-          }
-        }
-      },
-      "Microsoft.VisualStudio.TextTemplating.Interfaces.10.0/16.10.31320.204": {
-        "dependencies": {
-          "Microsoft.VisualStudio.SDK.EmbedInteropTypes": "15.0.34"
-        },
-        "runtime": {
-          "lib/netstandard2.0/Microsoft.VisualStudio.TextTemplating.Interfaces.10.0.dll": {
-            "assemblyVersion": "10.0.0.0",
-            "fileVersion": "10.0.30319.1"
-          }
-        }
-      },
-      "Microsoft.VisualStudio.TextTemplating.Interfaces.11.0/16.10.31320.204": {
-        "dependencies": {
-          "Microsoft.VisualStudio.SDK.EmbedInteropTypes": "15.0.34",
-          "Microsoft.VisualStudio.TextTemplating.Interfaces.10.0": "16.10.31320.204"
-        },
-        "runtime": {
-          "lib/netstandard2.0/Microsoft.VisualStudio.TextTemplating.Interfaces.11.0.dll": {
-            "assemblyVersion": "11.0.0.0",
-            "fileVersion": "11.0.50727.1"
-          }
-        }
-      },
       "Microsoft.Win32.Registry/4.7.0": {
         "dependencies": {
           "System.Security.AccessControl": "4.7.0",
           "System.Security.Principal.Windows": "4.7.0"
+        }
+      },
+      "Newtonsoft.Json/13.0.1": {
+        "runtime": {
+          "lib/netstandard2.0/Newtonsoft.Json.dll": {
+            "assemblyVersion": "13.0.0.0",
+            "fileVersion": "13.0.1.25517"
+          }
         }
       },
       "runtime.native.System.Data.SqlClient.sni/4.7.0": {
@@ -144,27 +118,44 @@
         }
       },
       "System.Security.Principal.Windows/4.7.0": {},
-      "ProjectSourceGenerator/1.0.6": {
+      "YamlDotNet/11.2.1": {
+        "runtime": {
+          "lib/netstandard2.1/YamlDotNet.dll": {
+            "assemblyVersion": "11.0.0.0",
+            "fileVersion": "11.2.1.0"
+          }
+        }
+      },
+      "ModelCatalog/1.0.0": {
+        "runtime": {
+          "ModelCatalog.dll": {}
+        }
+      },
+      "ProjectSourceGenerator/1.2.1": {
         "dependencies": {
           "Dapper": "2.0.90",
-          "Microsoft.VisualStudio.TextTemplating.15.0": "16.10.31320.204",
+          "ModelCatalog": "1.0.0",
           "System.CodeDom": "5.0.0",
-          "System.Data.SqlClient": "4.8.2",
-          "XmlCatalog": "1.0.0"
+          "System.Data.SqlClient": "4.8.2"
         },
         "runtime": {
           "ProjectSourceGenerator.dll": {}
         }
       },
-      "XmlCatalog/1.0.0": {
+      "YamlCatalog/1.0.0": {
+        "dependencies": {
+          "ModelCatalog": "1.0.0",
+          "Newtonsoft.Json": "13.0.1",
+          "YamlDotNet": "11.2.1"
+        },
         "runtime": {
-          "XmlCatalog.dll": {}
+          "YamlCatalog.dll": {}
         }
       }
     }
   },
   "libraries": {
-    "PluginProjectGenerator/1.0.0": {
+    "PluginProjectGenerator/1.2.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
@@ -183,40 +174,19 @@
       "path": "microsoft.netcore.platforms/3.1.0",
       "hashPath": "microsoft.netcore.platforms.3.1.0.nupkg.sha512"
     },
-    "Microsoft.VisualStudio.SDK.EmbedInteropTypes/15.0.34": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-zDb7MrGyE5V5X91sul3cM5vEpiXL94fsxE+HITpBzsZwiOpu6um6S+aJV+lPL0RCddblj+tu1yfrlowm5rtSRQ==",
-      "path": "microsoft.visualstudio.sdk.embedinteroptypes/15.0.34",
-      "hashPath": "microsoft.visualstudio.sdk.embedinteroptypes.15.0.34.nupkg.sha512"
-    },
-    "Microsoft.VisualStudio.TextTemplating.15.0/16.10.31320.204": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-zs19sNQ6qlFPdy6kQPWam/Gp/nE+FBOk2oCvwSx8u0VhpRsdrNCjk5lHhX7freoLEfzb5Vp43vWjlZDKFedgiQ==",
-      "path": "microsoft.visualstudio.texttemplating.15.0/16.10.31320.204",
-      "hashPath": "microsoft.visualstudio.texttemplating.15.0.16.10.31320.204.nupkg.sha512"
-    },
-    "Microsoft.VisualStudio.TextTemplating.Interfaces.10.0/16.10.31320.204": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-0b6cau1YbbDRayBjIYb/xaHNUSiqk+B9x1FbC2PjX+BfDQQvfrzxOlWOOnRYr0mxIFC6cyFLFnFxMZe7SCWMjw==",
-      "path": "microsoft.visualstudio.texttemplating.interfaces.10.0/16.10.31320.204",
-      "hashPath": "microsoft.visualstudio.texttemplating.interfaces.10.0.16.10.31320.204.nupkg.sha512"
-    },
-    "Microsoft.VisualStudio.TextTemplating.Interfaces.11.0/16.10.31320.204": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-ZCxK1axdRKEdBAnL3crhLpK1KOA5xeJ6NOt1+axy0GURQ1UIOU74/UyW2en2is/DZLhaiIK2j8izx5ttmtgwcg==",
-      "path": "microsoft.visualstudio.texttemplating.interfaces.11.0/16.10.31320.204",
-      "hashPath": "microsoft.visualstudio.texttemplating.interfaces.11.0.16.10.31320.204.nupkg.sha512"
-    },
     "Microsoft.Win32.Registry/4.7.0": {
       "type": "package",
       "serviceable": true,
       "sha512": "sha512-KSrRMb5vNi0CWSGG1++id2ZOs/1QhRqROt+qgbEAdQuGjGrFcl4AOl4/exGPUYz2wUnU42nvJqon1T3U0kPXLA==",
       "path": "microsoft.win32.registry/4.7.0",
       "hashPath": "microsoft.win32.registry.4.7.0.nupkg.sha512"
+    },
+    "Newtonsoft.Json/13.0.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-ppPFpBcvxdsfUonNcvITKqLl3bqxWbDCZIzDWHzjpdAHRFfZe0Dw9HmA0+za13IdyrgJwpkDTDA9fHaxOrt20A==",
+      "path": "newtonsoft.json/13.0.1",
+      "hashPath": "newtonsoft.json.13.0.1.nupkg.sha512"
     },
     "runtime.native.System.Data.SqlClient.sni/4.7.0": {
       "type": "package",
@@ -281,12 +251,24 @@
       "path": "system.security.principal.windows/4.7.0",
       "hashPath": "system.security.principal.windows.4.7.0.nupkg.sha512"
     },
-    "ProjectSourceGenerator/1.0.6": {
+    "YamlDotNet/11.2.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-tBt8K+korVfrjH9wyDEhiLKxbs8qoLCLIFwvYgkSUuMC9//w3z0cFQ8LQAI/5MCKq+BMil0cfRTRvPeE7eXhQw==",
+      "path": "yamldotnet/11.2.1",
+      "hashPath": "yamldotnet.11.2.1.nupkg.sha512"
+    },
+    "ModelCatalog/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
     },
-    "XmlCatalog/1.0.0": {
+    "ProjectSourceGenerator/1.2.1": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "YamlCatalog/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

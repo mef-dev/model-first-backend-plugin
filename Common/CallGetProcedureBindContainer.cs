@@ -1,7 +1,7 @@
-﻿using System;
+using System;
 using UCP.Common.Plugin.Attributes;
 
-namespace Natec.Entities
+namespace Bss.Entities
 {
     [DocIgnore]
     public class CallGetProcedureBindContainer : CallProcedureBindContainer

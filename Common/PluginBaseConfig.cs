@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading;
 using UCP.Common.Plugin.Attributes;
 
-namespace Natec.Entities
+namespace Bss.Entities
 {
     [DocIgnore]
     public sealed class PluginBaseConfig
@@ -73,7 +73,7 @@ namespace Natec.Entities
             this.ConnectionStrings = connectionStringsSections.AsEnumerable()
                 .ToDictionary((kvp) => kvp.Key.Split(":").Last(), (kvp) => kvp.Value);
 
-            if (false == this.ConnectionStrings?.Any())
+            if(false == this.ConnectionStrings?.Any())
                 throw new ArgumentNullException("Connection strings is empty")
                 {
                     Source = "Plugin base config"

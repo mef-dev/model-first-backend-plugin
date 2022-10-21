@@ -1,13 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.Data;
 using System.Data.SqlClient;
 using System.Diagnostics;
-using System.Text;
 
-namespace Natec.Entities
+namespace Bss.Entities
 {
-    internal class ConnectionManager
+    public class ConnectionManager
     {
         public static SqlConnection BuildSqlConnection(string connectionString, string preSlqCommand)
         {
@@ -64,3 +62,4 @@ namespace Natec.Entities
         }
     }
 }
+

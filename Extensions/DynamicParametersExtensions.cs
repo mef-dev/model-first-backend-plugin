@@ -1,8 +1,9 @@
-﻿using Dapper;
+using Dapper;
 using System.Linq;
+using System.Text;
 using UCP.Common.Plugin.Attributes;
 
-namespace Natec.Entities
+namespace Bss.Entities
 {
     [DocIgnore]
     public static class DynamicParametersExtensions
@@ -28,16 +29,16 @@ namespace Natec.Entities
                         continue;
 
                     if (v.Value != null)
-                        parameter.Add(v.Name, v.Value, v.DBType, v.Direction);
+                        parameter.Add(v.Name, v.Value, v.DBType, v.Direction, v.Size);
                     else
                     if (v.Direction == System.Data.ParameterDirection.InputOutput)
                     {
-                        parameter.Add(v.Name, ((v.DBType == System.Data.DbType.String) ? "" : null), v.DBType, v.Direction);
+                        parameter.Add(v.Name, ((v.DBType == System.Data.DbType.String) ? "" : null), v.DBType, v.Direction, v.Size);
                     }
                     else
                     if (v.Direction == System.Data.ParameterDirection.Output)
                     {
-                        parameter.Add(v.Name, null, v.DBType, v.Direction);
+                        parameter.Add(v.Name, null, v.DBType, v.Direction, v.Size);
                     }
                 }
             }
@@ -58,6 +59,17 @@ namespace Natec.Entities
                     )
                     v.Value = parameter.Get<dynamic>(v.Name);
             }
+        }
+
+        public static string AsLoggerString(this DynamicParameters parameter)
+        {
+            StringBuilder sb = new StringBuilder();
+            foreach (var paramName in parameter.ParameterNames)
+            {
+                var value = parameter.Get<dynamic>(paramName);
+                sb.Append($"( {paramName} = {value} )");
+            }
+            return sb.ToString();
         }
     }
 }

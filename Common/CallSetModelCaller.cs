@@ -1,8 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using UCP.Common.Plugin;
 using UCP.Common.Plugin.Attributes;
 
-namespace Natec.Entities
+namespace Bss.Entities
 {
     [DocIgnore]
     internal class CallSetModelCaller<TRequestWebModel,
@@ -22,6 +22,10 @@ namespace Natec.Entities
             if (resultCallModel == null)
                 return null;
 
+            if ((resultCallModel is EmptyCallProcedureModel) &&
+                (typeof(TResponseWebModel).Equals(typeof(EmptyEntityModel))))
+                return new EmptyEntityModel() as TResponseWebModel;
+
             TResponseWebModel result = MappingService.MapWN<TResponseWebModel>(resultCallModel);
             result.Clean();
             return result;
@@ -35,9 +39,16 @@ namespace Natec.Entities
                 resultCallModel = db.Procedures.CallRequestResponse<TRequestCallModel, TResponseCallModel>(callModel, timeOut);
             }
 
-            if (typeof(TResponseWebModel).Equals(typeof(EmptyEntityModel)))
+            if (resultCallModel == null)
             {
-                return null;
+                if(typeof(TResponseCallModel).Equals(typeof(EmptyEntityModel)))
+                {
+                    return new EmptyEntityModel() as TResponseCallModel;
+                }
+                if (typeof(TResponseCallModel).Equals(typeof(EmptyCallProcedureModel)))
+                {
+                    return new EmptyCallProcedureModel() as TResponseCallModel;
+                }
             }
             return resultCallModel;
         }

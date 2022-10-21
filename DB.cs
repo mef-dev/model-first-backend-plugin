@@ -1,4 +1,4 @@
-﻿using Dapper;
+using Dapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -14,10 +14,10 @@ using UCP.Common.Plugin;
 using UCP.Common.Plugin.Attributes;
 using static UCP.Common.Plugin.CommonPlatformException;
 
-namespace Natec.Entities
+namespace Bss.Entities
 {
     /// <summary>
-    /// The class is designed to work with the database
+    /// The class is designed to work with the "Widecoup" database
     /// </summary>
     [DocIgnore]
     public class DB : IDisposable
@@ -31,6 +31,7 @@ namespace Natec.Entities
         private ProceduresCollection _proceduresCollection = null;
         private string _preSqlCommand = string.Empty;
         private ILogger _logger;
+        private Func<ProceduresCollection> _proceduresInitializer = null;
         //private static TestsPlugin _testsPlugin = new TestsPlugin();
         #endregion
 
@@ -48,9 +49,73 @@ namespace Natec.Entities
         }
 
         public SqlExecParameters SqlExecParameters { get; set; }
+
+        /// <summary>
+        /// Procedures collection
+        /// </summary>
+        public Bss.Entities.ProceduresCollection Procedures
+        {
+            get
+            {
+                /*
+                var result = LazyInitializer.EnsureInitialized<Bss.Entities.ProceduresCollection> (ref _proceduresCollection, () => new ProceduresCollection());
+                result.ConnectionString = _connectionString;
+                result.PreSqlCommand = _preSqlCommand;
+                result.SqlExecParameters = SqlExecParameters;
+                result.Logger = this._logger;
+                */
+                var result = LazyInitializer.EnsureInitialized<Bss.Entities.ProceduresCollection>(ref _proceduresCollection, ProceduresInitializer);
+                return result;
+            }
+        }
+
+        internal TablesCollection Tables
+        {
+            get
+            {
+                var result = tablesHolder.Value;
+                result.ConnectionString = _connectionString;
+                return tablesHolder.Value;
+            }
+        }
+
+        public Func<ProceduresCollection> ProceduresInitializer 
+        {
+            get
+            {
+                if (_proceduresInitializer == null)
+                {
+                    if (PackageEnvironment.Mode == PackageMode.Production)
+                    {
+                        _proceduresInitializer = () => new DBProceduresCollection()
+                        {
+                            ConnectionString = _connectionString,
+                            PreSqlCommand = _preSqlCommand,
+                            SqlExecParameters = SqlExecParameters,
+                            Logger = this._logger
+                        };
+                    }
+                    else if (PackageEnvironment.Mode == PackageMode.Development)
+                    {
+                        _proceduresInitializer = () => new DevelopmentProceduresCollection();
+                    }
+                    else
+                    {
+                        _proceduresInitializer = PackageEnvironment.ProceduresInitializer;
+                    }
+                }
+                return _proceduresInitializer;
+            }
+            set
+            {
+                _proceduresInitializer = value;
+            }
+        }
+
         #endregion
 
-        public class ProceduresCollection
+        #region [Inner classes]
+        public class DBProceduresCollection  :  Bss.Entities.ProceduresCollection
         {
             #region [Properties]
             internal string ConnectionString { get; set; }
@@ -61,7 +126,7 @@ namespace Natec.Entities
             #endregion
 
             #region [Common]
-            public void CallProcedure<T>(T cpm, int? commandTimeOut = null) where T : class, ICallProcedureModel<T>
+            public override void CallProcedure<T>(T cpm, int? commandTimeOut = null)
             {
                 DynamicParameters parameter = new DynamicParameters(cpm);
 
@@ -81,7 +146,7 @@ namespace Natec.Entities
                 }
             }
 
-            public async Task CallProcedureAsync<T>(T cpm, int? commandTimeOut = null) where T : class, ICallProcedureModel<T>
+            public override async Task CallProcedureAsync<T>(T cpm, int? commandTimeOut = null)
             {
                 DynamicParameters parameter = new DynamicParameters(cpm);
 
@@ -100,7 +165,7 @@ namespace Natec.Entities
                 }
             }
 
-            public void CallProcedure(string storedProcedureName, DynamicParameters parameter, int? timeOut = null)
+            public override void CallProcedure(string storedProcedureName, DynamicParameters parameter, int? timeOut = null)
             {
                 using (var sqlConnection = ConnectionManager.BuildSqlConnection(ConnectionString, PreSqlCommand))
                 {
@@ -112,7 +177,7 @@ namespace Natec.Entities
                 }
             }
 
-            public async Task CallProcedureAsync(string storedProcedureName, DynamicParameters parameter, int? timeOut = null)
+            public override async Task CallProcedureAsync(string storedProcedureName, DynamicParameters parameter, int? timeOut = null)
             {
                 using (var sqlConnection = ConnectionManager.BuildSqlConnection(ConnectionString, PreSqlCommand))
                 {
@@ -124,68 +189,89 @@ namespace Natec.Entities
                 }
             }
 
-            public TOut CallRequestResponse<T, TOut>(T cpm, int? timeOut = null)
-                where T : class, ICallProcedureModel<T>
-                where TOut : class, ICallProcedureModel<TOut>
+            public override void CallRequest<T>(ref T cpm, int? timeOut = null)
             {
                 DynamicParameters parameter = new DynamicParameters();
 
-                if (!typeof(TOut).Equals(typeof(EmptyCallProcedureModel)))
+                if (!typeof(T).Equals(typeof(EmptyCallProcedureModel)))
                     parameter.AddProcedureParams(cpm);
 
-                if (!typeof(TOut).Equals(typeof(EmptyCallProcedureModel)))
-                    parameter.AddProcedureParams(Activator.CreateInstance<TOut>(), false, false, true);
-                /*
-                foreach (var v in cpm.DynamicParameters().Where(dp => dp.Value != null))
-                {
-                    parameter.Add(v.Name, v.Value, v.DBType, v.Direction);
-                }
-
-                foreach (var v in cpm.DynamicParameters().Where(dp => (dp.Value == null) && (dp.Direction == System.Data.ParameterDirection.InputOutput)))
-                {
-                    string paramValue = ((v.Value == null) && (v.DBType == System.Data.DbType.String)) ?
-                        "" : null;
-                    parameter.Add(v.Name, paramValue, v.DBType, v.Direction);
-                }
-                */
+                string procedureName = cpm.StoredProcedureName();
 
                 using (var sqlConnection = ConnectionManager.BuildSqlConnection(ConnectionString, PreSqlCommand))
                 {
                     Exceptions.WrapAction(() =>
                     {
                         pre_Command_Exec(sqlConnection);
-                        sqlConnection.Execute(SqlExecParameters, cpm.StoredProcedureName(), parameter, null, timeOut, System.Data.CommandType.StoredProcedure, this.Logger);
-                        /*
-                        foreach (var v in cpm.DynamicParameters().Where(dp => dp.Direction == System.Data.ParameterDirection.InputOutput))
-                        {
-                            v.Value = parameter.Get<dynamic>(v.Name);
-                        }
-                        */
+                        sqlConnection.Execute(SqlExecParameters, procedureName, parameter, null, timeOut, System.Data.CommandType.StoredProcedure, this.Logger);
                     });
                 }
 
                 parameter.FillProcedureResultParams(cpm, false, true, true);
+            }
 
+            public override TOut CallRequestResponse<T, TOut>(T cpm, int? timeOut = null, Func<T, TOut> mapFunc = null)
+            {
+                DynamicParameters parameters = new DynamicParameters();
+
+                if (!typeof(T).Equals(typeof(EmptyCallProcedureModel)))
+                    parameters.AddProcedureParams(cpm);
+
+                if (!typeof(TOut).Equals(typeof(EmptyCallProcedureModel)))
+                    parameters.AddProcedureParams(Activator.CreateInstance<TOut>(), false, false, true);
+
+                using (var sqlConnection = ConnectionManager.BuildSqlConnection(ConnectionString, PreSqlCommand))
+                {
+                    Exceptions.WrapAction(() =>
+                    {
+                        pre_Command_Exec(sqlConnection);
+                        sqlConnection.Execute(SqlExecParameters, cpm.StoredProcedureName(), parameters, null, timeOut, System.Data.CommandType.StoredProcedure, this.Logger);
+                    });
+                    //var stat = sqlConnection.RetrieveStatistics();
+                }
+
+                parameters.FillProcedureResultParams(cpm, false, true, true);
+
+                if (typeof(TOut).Equals(typeof(EmptyCallProcedureModel)))
+                {
+                    return new EmptyCallProcedureModel() as TOut;
+                }
+                else if (typeof(TOut).Equals(typeof(EmptyEntityModel)))
+                {
+                    return new EmptyEntityModel() as TOut;
+                }
+                /*
                 if (typeof(TOut).Equals(typeof(EmptyCallProcedureModel)) ||
                    typeof(TOut).Equals(typeof(EmptyModel)))
                     return null;
+                */
                 else
                 {
-                    var result = (typeof(T).Equals(typeof(TOut)) ? cpm as TOut : MappingService.Map<TOut>(cpm));
-                    parameter.FillProcedureResultParams(result, false, true, true);
+                    TOut result = null;
+                    if (typeof(T).Equals(typeof(TOut)))
+                    {
+                        result = cpm as TOut;
+                    }
+                    else
+                    {
+                        result = (mapFunc == null) ? MappingService.Map<TOut>(cpm) : mapFunc(cpm);
+                    }
+
+                    parameters.FillProcedureResultParams(result, false, true, true);
                     return result;
                 }
             }
 
-            public async Task<TOut> CallRequestResponseAsync<T, TOut>(T cpm, int? timeOut = null)
-                where T : class, ICallProcedureModel<T>
-                where TOut : class
+            public override async Task<TOut> CallRequestResponseAsync<T, TOut>(T cpm, int? timeOut = null)
             {
                 DynamicParameters parameter = new DynamicParameters();
 
                 foreach (var v in cpm.DynamicParameters().Where(dp => dp.Value != null))
                 {
-                    parameter.Add(v.Name, v.Value, v.DBType, v.Direction);
+                    if (v.DBType == System.Data.DbType.String)
+                        parameter.Add(v.Name, v.Value, v.DBType, v.Direction, int.MaxValue);
+                    else
+                        parameter.Add(v.Name, v.Value, v.DBType, v.Direction);
                 }
 
                 foreach (var v in cpm.DynamicParameters().Where(dp => (dp.Value == null) && (dp.Direction == System.Data.ParameterDirection.InputOutput)))
@@ -212,9 +298,7 @@ namespace Natec.Entities
                 return (typeof(T).Equals(typeof(TOut)) ? cpm as TOut : MappingService.Map<TOut>(cpm));
             }
 
-            public TOut CallRequestResponseModelTemplated<T, TOut>(T cpm, int? timeOut = null)
-                where T : class, ICallProcedureModel<T>
-                where TOut : class
+            public override TOut CallRequestResponseModelTemplated<T, TOut>(T cpm, int? timeOut = null)
             {
                 //DapperProvider dapper = new DapperProvider(ConnectionString);
                 DynamicParameters parameter = new DynamicParameters(cpm);
@@ -236,9 +320,7 @@ namespace Natec.Entities
                 }
             }
 
-            public async Task<TOut> CallRequestResponseModelTemplatedAsync<T, TOut>(T cpm, int? timeOut = null)
-                where T : class, ICallProcedureModel<T>
-                where TOut : class
+            public override async Task<TOut> CallRequestResponseModelTemplatedAsync<T, TOut>(T cpm, int? timeOut = null)
             {
                 //DapperProvider dapper = new DapperProvider(ConnectionString);
                 DynamicParameters parameter = new DynamicParameters(cpm);
@@ -262,10 +344,12 @@ namespace Natec.Entities
                 }
             }
 
-            public (TOutCallModel Result, IEnumerable<dynamic> ResultSet) CallRequestResponseQuery<TInCallModel, TOutCallModel>
+            //*************************************************************************************************************
+            // Queries
+            //*************************************************************************************************************
+
+            public override (TOutCallModel Result, IEnumerable<dynamic> ResultSet) CallRequestResponseQuery<TInCallModel, TOutCallModel>
                 (TInCallModel inCallModel, int? timeOut = null)
-                where TInCallModel : class, ICallProcedureModel<TInCallModel>
-                where TOutCallModel : class
             {
                 /********************************************************************/
                 IEnumerable<dynamic> resultSet = null;
@@ -275,14 +359,17 @@ namespace Natec.Entities
 
                 foreach (var v in inCallModel.DynamicParameters().Where(dp => dp.Value != null))
                 {
-                    parameter.Add(v.Name, v.Value, v.DBType, v.Direction);
+                    if (v.DBType == System.Data.DbType.String)
+                        parameter.Add(v.Name, v.Value, v.DBType, v.Direction, int.MaxValue);
+                    else
+                        parameter.Add(v.Name, v.Value, v.DBType, v.Direction);
                 }
 
                 foreach (var v in inCallModel.DynamicParameters().Where(dp => (dp.Value == null) && (dp.Direction == System.Data.ParameterDirection.InputOutput)))
                 {
                     if ((v.Value == null) && (v.DBType == System.Data.DbType.String))
                     {
-                        parameter.Add(v.Name, "", v.DBType, v.Direction);
+                        parameter.Add(v.Name, "", v.DBType, v.Direction, int.MaxValue);
                     }
                     else
                     {
@@ -297,15 +384,15 @@ namespace Natec.Entities
                     Exceptions.WrapAction(() =>
                     {
                         pre_Command_Exec(sqlConnection);
-                        var res = sqlConnection.QueryMultiple(inCallModel.StoredProcedureName(), parameter, null, realTimeOut, System.Data.CommandType.StoredProcedure);
+                        var res = sqlConnection.ExecuteQueryMultiple(SqlExecParameters, 
+                            inCallModel.StoredProcedureName(), 
+                            parameter, 
+                            null, 
+                            realTimeOut, 
+                            System.Data.CommandType.StoredProcedure, 
+                            this.Logger);
 
-#if DEBUG
                         resultSet = res.Read().ToList();
-
-#else
-                        //result = res.Read();
-                        resultSet = res.Read().ToList();
-#endif
                     });
                 }
                 foreach (var v in inCallModel.DynamicParameters().Where(dp => dp.Direction == System.Data.ParameterDirection.InputOutput))
@@ -318,8 +405,7 @@ namespace Natec.Entities
                 return (Result: result, ResultSet: resultSet);
             }
 
-            public IEnumerable<TOut> CallRequestResponseQuery<T, TOut>(T cpm, Func<object, TOut> mapper, int? timeOut = null)
-                            where T : class, ICallProcedureModel<T>
+            public override IEnumerable<TOut> CallRequestResponseQuery<T, TOut>(T cpm, Func<object, TOut> mapper, int? timeOut = null)
             {
                 IEnumerable<TOut> result = null;
 
@@ -330,8 +416,25 @@ namespace Natec.Entities
                     throw new NullReferenceException("mapper");
 
                 //DapperProvider dapper = new DapperProvider(ConnectionString);
-                DynamicParameters parameter = new DynamicParameters(cpm);
-
+                DynamicParameters parameter = new DynamicParameters();
+                if (cpm is Dictionary<string, Tuple<object, DbType, ParameterDirection, int?>>)
+                {
+                    var dic = cpm as Dictionary<string, Tuple<object, DbType, ParameterDirection, int?>>;
+                    foreach (var item in dic)
+                    {
+                        parameter.Add(item.Key, item.Value.Item1, item.Value.Item2, item.Value.Item3, item.Value.Item4);
+                    }
+                }
+                else
+                {
+                    foreach (var v in cpm.DynamicParameters().Where(dp => dp.Value != null))
+                    {
+                        if (v.DBType == System.Data.DbType.String)
+                            parameter.Add(v.Name, v.Value, v.DBType, v.Direction, int.MaxValue);
+                        else
+                            parameter.Add(v.Name, v.Value, v.DBType, v.Direction);
+                    }
+                }
 
                 foreach (var e in cpm.Expressions())
                 {
@@ -344,12 +447,16 @@ namespace Natec.Entities
                 {
                     Exceptions.WrapAction(() =>
                     {
-
-                        var res = sqlConnection.QueryMultiple(cpm.StoredProcedureName(), parameter, null, realTimeOut, System.Data.CommandType.StoredProcedure);
+                        var res = sqlConnection.ExecuteQueryMultiple(SqlExecParameters, 
+                            cpm.StoredProcedureName(), 
+                            parameter, 
+                            null, 
+                            realTimeOut, 
+                            System.Data.CommandType.StoredProcedure, 
+                            this.Logger);
 
                         foreach (var pn in parameter.ParameterNames)
                         {
-                            //var prm = parameter[pn];
                             var val = parameter.Get<dynamic>(pn);
                             var valObj = parameter.Get<object>(pn);
                         }
@@ -374,30 +481,28 @@ namespace Natec.Entities
                 return result;
             }
 
-            public IEnumerable<TOut> CallRequestResponseQuery<TInCallModel, TOutCallModel, TOut>
+            public override IEnumerable<TOut> CallRequestResponseQuery<TInCallModel, TOutCallModel, TOut>
                 (TInCallModel inCallModel, out TOutCallModel outCallModel, Func<dynamic, TOut> mapper, int? timeOut = null)
-                where TInCallModel : class, ICallProcedureModel<TInCallModel>
-                where TOutCallModel : class
-                where TOut : class
             {
                 outCallModel = null;
                 TOutCallModel outCallModelTmp = null;
                 IEnumerable<TOut> result = null;
 
-                //Func<dynamic, TOut> mapperFunc = mapper ?? (o => MappingService.Map<TOut>(o));
-
                 DynamicParameters parameter = new DynamicParameters();
 
                 foreach (var v in inCallModel.DynamicParameters().Where(dp => dp.Value != null))
                 {
-                    parameter.Add(v.Name, v.Value, v.DBType, v.Direction);
+                    if (v.DBType == System.Data.DbType.String)
+                        parameter.Add(v.Name, v.Value, v.DBType, v.Direction, int.MaxValue);
+                    else
+                        parameter.Add(v.Name, v.Value, v.DBType, v.Direction);
                 }
 
                 foreach (var v in inCallModel.DynamicParameters().Where(dp => (dp.Value == null) && (dp.Direction == System.Data.ParameterDirection.InputOutput)))
                 {
                     if ((v.Value == null) && (v.DBType == System.Data.DbType.String))
                     {
-                        parameter.Add(v.Name, "", v.DBType, v.Direction);
+                        parameter.Add(v.Name, "", v.DBType, v.Direction, int.MaxValue);
                     }
                     else
                     {
@@ -412,11 +517,18 @@ namespace Natec.Entities
                     Exceptions.WrapAction(() =>
                     {
                         pre_Command_Exec(sqlConnection);
-                        var res = sqlConnection.QueryMultiple(inCallModel.StoredProcedureName(), parameter, null, realTimeOut, System.Data.CommandType.StoredProcedure);
+                        var res = sqlConnection.ExecuteQueryMultiple(SqlExecParameters,
+                            inCallModel.StoredProcedureName(),
+                            parameter,
+                            null,
+                            realTimeOut,
+                            System.Data.CommandType.StoredProcedure,
+                            this.Logger);
 
                         try
                         {
 #if DEBUG
+
                             result = res.Read()
                                 .Select((d) => mapper(d))
                                 .Cast<TOut>()
@@ -431,6 +543,18 @@ namespace Natec.Entities
                                    .Cast<TOut>()
                                    .ToList();
 #endif
+                        }
+                        /*
+                         * +		readEx	{"{\"LevelMessage\": \"17\",\"ErrNumber\": \"50243\",\"Message\": \"������ ��������� ���������� ��������� ����� (Agreements): (@Agr_ID,@Grt_ID,@Rpr_ID,@DateStart,@Abn_ID)=(1918003,1663,-1,'2021-02-01 00:00:00.000',0: (������ ��������� ������������� ������� ��������� ����� (RepresentationTariffPlanBind): (������ �������� �������� �� ������: (���������� ������������ ��� �������� ��������: TemplateID = 5894 ServiceCode = 5001)))\",\"State\": \"1\",\"HelpLink\": \"\",\"errNumberReason\": \"51625\",\"Data\":{\"LevelMessage\": \"17\",\"ErrNumber\": \"50240\",\"Message\": \"������ ��������� ������������� ������� ��������� ����� (RepresentationTariffPlanBind): (������ �������� �������� �� ������: (���������� ������������ ��� �������� ��������: TemplateID = 5894 ServiceCode = 5001))\",\"State\": \"1\",\"HelpLink\": \"\",\"errNumberReason\": \"51625\",\"Data\":{\"LevelMessage\": \"17\",\"ErrNumber\": \"50271\",\"Message\": \"������ �������� �������� �� ������: (���������� ������������ ��� �������� ��������: TemplateID = 5894 ServiceCode = 5001)\",\"State\": \"1\",\"HelpLink\": \"\",\"errNumberReason\": \"51625\",\"Data\":{\"LevelMessage\": \"17\",\"ErrNumber\": \"51625\",\"Message\": \"���������� ������������ ��� �������� ��������: TemplateID = 5894 ServiceCode = 5001\",\"State\": \"1\",\"HelpLink\": \"\",\"errNumberReason\": \"51625\",\"ResolveUrl\": \"\"},\"ResolveUrl\": \"\"},\"ResolveUrl\": \"\"},\"ResolveUrl\": \"\"}"}	System.Exception {System.Data.SqlClient.SqlException}
+
+                         */
+                        catch (System.Data.SqlTypes.SqlTypeException sqlTypeException)
+                        {
+                            throw sqlTypeException;
+                        }
+                        catch (System.Data.SqlClient.SqlException sqlException)
+                        {
+                            throw sqlException;
                         }
                         catch (Exception readEx)
                         {
@@ -448,67 +572,11 @@ namespace Natec.Entities
 
                     outCallModel = outCallModelTmp;
                     return result;
-                    /*
-                    try
-                    {
-                        pre_Command_Exec(sqlConnection);
-                        var res = sqlConnection.QueryMultiple(inCallModel.StoredProcedureName(), parameter, null, realTimeOut, System.Data.CommandType.StoredProcedure);
-
-                        try
-                        {
-#if DEBUG
-                            result = res.Read()
-                                .Select((d) => mapper(d))
-                                .Cast<TOut>()
-                                .ToList();
-
-#else
-                        result = res.Read()
-                            .Select((d) => mapperFunc(d))
-                            .Cast<TOut>();
-#endif
-                        }
-                        catch (Exception readEx)
-                        {
-                            Trace.TraceError($"Error while reading dataset : {readEx}");
-                            result = new List<TOut>();
-                        }
-
-                        foreach (var v in inCallModel.DynamicParameters().Where(dp => dp.Direction == System.Data.ParameterDirection.InputOutput))
-                        {
-                            v.Value = parameter.Get<dynamic>(v.Name);
-                        }
-
-                        outCallModel = MappingService.Map<TOutCallModel>(inCallModel);
-
-                        return result;
-                    }
-                    catch (System.Data.SqlTypes.SqlTypeException sqlTypeException)
-                    {
-                        throw sqlTypeException.Handle();
-                    }
-                    catch (System.Data.SqlClient.SqlException sqlException)
-                    {
-                        throw sqlException.Handle();
-                    }
-                    catch (Exception exception)
-                    {
-                        throw new UCP.Common.Plugin.CommonPlatformException(exception.Message)
-                        {
-                            Source = exception.Source
-                        };
-                    }
-
-                    */
                 }
             }
 
-            public IEnumerable<TResOut> CallRequestResponseQuery<TInCallModel, TOutCallModel, TProcOut, TResOut>
+            public override IEnumerable<TResOut> CallRequestResponseQuery<TInCallModel, TOutCallModel, TProcOut, TResOut>
                 (TInCallModel inCallModel, out TOutCallModel outCallModel, Func<TProcOut, TResOut> mapper = null, int? timeOut = null)
-                where TInCallModel : class, ICallProcedureModel<TInCallModel>
-                where TOutCallModel : class
-                where TProcOut : class
-                where TResOut : class
             {
                 outCallModel = null;
                 IEnumerable<TResOut> result = null;
@@ -530,14 +598,17 @@ namespace Natec.Entities
 
                 foreach (var v in inCallModel.DynamicParameters().Where(dp => dp.Value != null))
                 {
-                    parameter.Add(v.Name, v.Value, v.DBType, v.Direction);
+                    if (v.DBType == System.Data.DbType.String)
+                        parameter.Add(v.Name, v.Value, v.DBType, v.Direction, int.MaxValue);
+                    else
+                        parameter.Add(v.Name, v.Value, v.DBType, v.Direction);
                 }
 
                 foreach (var v in inCallModel.DynamicParameters().Where(dp => (dp.Value == null) && (dp.Direction == System.Data.ParameterDirection.InputOutput)))
                 {
                     if ((v.Value == null) && (v.DBType == System.Data.DbType.String))
                     {
-                        parameter.Add(v.Name, "", v.DBType, v.Direction);
+                        parameter.Add(v.Name, "", v.DBType, v.Direction, int.MaxValue);
                     }
                     else
                     {
@@ -552,7 +623,13 @@ namespace Natec.Entities
                     Exceptions.WrapAction(() =>
                     {
                         pre_Command_Exec(sqlConnection);
-                        var res = sqlConnection.QueryMultiple(inCallModel.StoredProcedureName(), parameter, null, realTimeOut, System.Data.CommandType.StoredProcedure);
+                        var res = sqlConnection.ExecuteQueryMultiple(SqlExecParameters,
+                            inCallModel.StoredProcedureName(),
+                            parameter,
+                            null,
+                            realTimeOut,
+                            System.Data.CommandType.StoredProcedure,
+                            this.Logger);
 
 #if DEBUG
                         result = res.Read()
@@ -578,10 +655,8 @@ namespace Natec.Entities
                 return result;
             }
 
-            public IEnumerable<dynamic> CallRequestResponseQuery<TInCallModel, TOutCallModel>
+            public override IEnumerable<dynamic> CallRequestResponseQuery<TInCallModel, TOutCallModel>
                 (TInCallModel inCallModel, out TOutCallModel outCallModel, int? timeOut = null)
-                where TInCallModel : class, ICallProcedureModel<TInCallModel>
-                where TOutCallModel : class
             {
                 outCallModel = null;
                 IEnumerable<dynamic> result = null;
@@ -591,14 +666,17 @@ namespace Natec.Entities
 
                 foreach (var v in inCallModel.DynamicParameters().Where(dp => dp.Value != null))
                 {
-                    parameter.Add(v.Name, v.Value, v.DBType, v.Direction);
+                    if (v.DBType == System.Data.DbType.String)
+                        parameter.Add(v.Name, v.Value, v.DBType, v.Direction, int.MaxValue);
+                    else
+                        parameter.Add(v.Name, v.Value, v.DBType, v.Direction);
                 }
 
                 foreach (var v in inCallModel.DynamicParameters().Where(dp => (dp.Value == null) && (dp.Direction == System.Data.ParameterDirection.InputOutput)))
                 {
                     if ((v.Value == null) && (v.DBType == System.Data.DbType.String))
                     {
-                        parameter.Add(v.Name, "", v.DBType, v.Direction);
+                        parameter.Add(v.Name, "", v.DBType, v.Direction, int.MaxValue);
                     }
                     else
                     {
@@ -617,13 +695,13 @@ namespace Natec.Entities
 
                         if (typeof(TOutCallModel).Equals(typeof(EmptyModel)))
                         {
-                            result = sqlConnection.Query(inCallModel.StoredProcedureName(), parameter, null, false, realTimeOut, System.Data.CommandType.StoredProcedure);
+                            result = sqlConnection.ExecuteQuery(SqlExecParameters, inCallModel.StoredProcedureName(), parameter, null, false, realTimeOut, System.Data.CommandType.StoredProcedure, this.Logger);
                             result = result?.ToList();
                         }
                         else
                         {
 
-                            var res = sqlConnection.QueryMultiple(inCallModel.StoredProcedureName(), parameter, null, realTimeOut, System.Data.CommandType.StoredProcedure);
+                            var res = sqlConnection.ExecuteQueryMultiple(SqlExecParameters, inCallModel.StoredProcedureName(), parameter, null, realTimeOut, System.Data.CommandType.StoredProcedure, this.Logger);
                             result = res.Read();
 
                             foreach (var v in inCallModel.DynamicParameters().Where(dp => dp.Direction == System.Data.ParameterDirection.InputOutput))
@@ -640,124 +718,7 @@ namespace Natec.Entities
             }
 
             #endregion
-            /*
-                        #region [Special calls]
-                        /// <summary>
-                        /// Обертка для вызова p_get_Tasks
-                        /// </summary>
-                        /// <param name="callModel"></param>
-                        /// <param name="timeOut"></param>
-                        /// <returns></returns>
-                        public IEnumerable<p_get_Tasks_ResultModel> p_get_Tasks(p_get_Tasks_CallModel callModel, int? timeOut = null)
-                        {
-                            var result = CallRequestResponseQuery<p_get_Tasks_CallModel, p_get_Tasks_ResultModel>(callModel, (o) =>
-                            {
-                                IDictionary<string, object> dic = o as IDictionary<string, object>;
-                                p_get_Tasks_ResultModel dest = null;
 
-                                if (dic != null)
-                                {
-                                    dest = new p_get_Tasks_ResultModel();
-                                    dest.ID_GroupATS = (int)dic["ID_GroupATS"];
-                                    dest.lig_ID = (long?)dic["lig_ID"];
-                                    dest.tsk_DateStart = (DateTime?)dic["tsk_DateStart"];
-                                    dest.tsk_ID = (long?)dic["tsk_ID"];
-                                    dest.tsk_PeriodBegin = (DateTime?)dic["tsk_PeriodBegin"];
-                                    dest.tsk_PeriodEnd = (DateTime?)dic["tsk_PeriodEnd"];
-                                    dest.tsk_ProcessName = (string)dic["tsk_ProcessName"];
-                                    dest.tsk_State = (string)dic["tsk_State"];
-                                    dest.tsk_StateMessage = (string)dic["tsk_StateMessage"];
-                                }
-                                return dest;
-                            }, timeOut);
-                            return result;
-                        }
-
-                        public IEnumerable<long?> p_get_ListID(long? lig_Id, int? timeOut = null)
-                        {
-                            var result = CallRequestResponseQuery<p_get_ListID_CallModel, long?>(new p_get_ListID_CallModel("p_get_ListID", lig_Id), (o) =>
-                           {
-                               long? convertRes = null;
-                               IDictionary<string, object> dic = o as IDictionary<string, object>;
-                               if (dic != null)
-                               {
-                                   convertRes = (long?)dic["ID"];
-                               };
-                               return convertRes;
-
-                           }, timeOut);
-                            return result;
-                        }
-
-                        public IEnumerable<long?> p_srh_get_ListID(int? lig_Id, int? tspl_NoListIDRead, int? timeOut = null)
-                        {
-                            var result = CallRequestResponseQuery<p_srh_get_ListID_CallModel, long?>(new p_srh_get_ListID_CallModel(lig_Id, tspl_NoListIDRead), (o) =>
-                            {
-                                long? convertRes = null;
-                                IDictionary<string, object> dic = o as IDictionary<string, object>;
-                                if (dic != null)
-                                {
-                                    convertRes = (long?)dic["ID"];
-                                };
-                                return convertRes;
-
-                            }, timeOut);
-                            return result;
-                        }
-
-                        public SET_p_ucp_set_ServiceTask_Response p_ucp_set_ServiceTask(int taskId,
-                            TaskStateCode stateCode,
-                            string stateMessage,
-                            DateTime dateStart,
-                            int groupATSId,
-                            int? timeOut = null)
-                        {
-                            SET_p_ucp_set_ServiceTask_Request cm = new SET_p_ucp_set_ServiceTask_Request()
-                            {
-                                Tsk_ID = taskId,
-                                Tsst_ID = (int)stateCode,
-                                Tsk_StateMessage = stateMessage,
-                                ID_GroupATS = groupATSId
-                                //"Задача поставлена в очередь выполнения"
-                            };
-
-                            if (!DateTime.MinValue.Equals(dateStart))
-                            {
-                                cm.Tsk_DateStart = dateStart;
-                            }
-
-                            return CallRequestResponse<SET_p_ucp_set_ServiceTask_Request, SET_p_ucp_set_ServiceTask_Response>(cm, timeOut);
-                        }
-
-                        public IEnumerable<p_get_ServiceTaskData_ResultModel> p_get_ServiceTaskData(p_get_ServiceTaskData_CallModel callModel, int? timeOut = null)
-                        {
-                            var result = CallRequestResponseQuery<p_get_ServiceTaskData_CallModel, p_get_ServiceTaskData_ResultModel>(callModel, (o) =>
-                            {
-                                return MappingService.Map<p_get_ServiceTaskData_ResultModel>(o);
-                            }, timeOut);
-                            return result;
-                        }
-
-                        public IEnumerable<p_ucp_get_TaskProcessList_ResultModel> p_ucp_get_TaskProcessList(int? timeOut = null)
-                        {
-                            p_ucp_get_TaskProcessList_CallModel callModel = new p_ucp_get_TaskProcessList_CallModel();
-                            var result = CallRequestResponseQuery<p_ucp_get_TaskProcessList_CallModel, p_ucp_get_TaskProcessList_ResultModel>(callModel, (o) =>
-                            {
-                                return MappingService.Map<p_ucp_get_TaskProcessList_ResultModel>(o);
-                            }, timeOut);
-                            return result;
-                        }
-
-                        public void sp_StatusMonitor(int numberATS, int? timeOut = null)
-                        {
-                            DynamicParameters dp = new DynamicParameters();
-                            dp.Add("@NumberATS", numberATS, System.Data.DbType.Int32, System.Data.ParameterDirection.Input);
-
-                            this.CallProcedure("[dbo].[sp_StatusMonitor]", dp, timeOut);
-                        }
-
-                        #endregion
-            */
             private void pre_Command_Exec(SqlConnection sqlConnection)
             {
                 //stub
@@ -779,43 +740,15 @@ namespace Natec.Entities
                 }
             }
 
-            internal ProceduresCollection()
+            internal DBProceduresCollection()
             { }
         }
 
         public class TablesCollection
         {
             internal string ConnectionString { get; set; }
-
         }
-
-        /// <summary>
-        /// Procedures collection
-        /// </summary>
-        public ProceduresCollection Procedures
-        {
-            get
-            {
-                var result = LazyInitializer.EnsureInitialized<ProceduresCollection>(ref _proceduresCollection, () => new ProceduresCollection());
-                //var result = proceduresHolder.Value;
-                result.ConnectionString = _connectionString;
-                result.PreSqlCommand = _preSqlCommand;
-                result.SqlExecParameters = SqlExecParameters;
-                result.Logger = this._logger;
-                //return proceduresHolder.Value;
-                return result;
-            }
-        }
-
-        internal TablesCollection Tables
-        {
-            get
-            {
-                var result = tablesHolder.Value;
-                result.ConnectionString = _connectionString;
-                return tablesHolder.Value;
-            }
-        }
+        #endregion
 
         public DB(string connectionString, ILogger logger = null)
         {
@@ -1002,3 +935,4 @@ namespace Natec.Entities
         #endregion
     }
 }
+

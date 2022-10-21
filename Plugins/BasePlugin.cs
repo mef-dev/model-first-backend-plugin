@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Composition;
@@ -7,13 +7,13 @@ using System.Reflection;
 using UCP.Common.Plugin;
 using UCP.Common.Plugin.Attributes;
 
-namespace Natec.Entities
+namespace Bss.Entities
 {
     /// <summary>
     /// Implements only config - related base operations
     /// </summary>
     [DocIgnore]
-    public class BasePlugin
+    public class BasePlugin 
     {
         #region [Properties]
         private const int defaultPostTimeout = 0;
@@ -56,7 +56,7 @@ namespace Natec.Entities
 
         internal class ConnectionStringCollection
         {
-            public string WriteConnection
+            public string WriteConnection 
             {
                 get
                 {
@@ -181,16 +181,34 @@ namespace Natec.Entities
 
                 if (modValue == null)
                 {
-                    pi["ModBy"] = apiContext?.User?.Identity?.Name;
-                    pi["ModifiedBy"] = apiContext?.User?.Identity?.Name;
+                    //pi["ModBy"] = apiContext?.User?.Identity?.Name;
+                    //pi["ModifiedBy"] = apiContext?.User?.Identity?.Name;
+                    //pi["ModBy"] = apiContext?.DataBag.UserName;
+                    //pi["ModifiedBy"] = apiContext?.DataBag.UserName;
+
+                    if (true == dataBagDic?.TryGetValue("Email", out ho))
+                    {
+                        pi["ModBy"] = ho;
+                        pi["ModifiedBy"] = ho;
+                    }
+
+                    //pi["ModBy"] = apiContext?.DataBag.Email;
+                    //pi["ModifiedBy"] = apiContext?.DataBag.Email;
                 }
 
                 modValue = pi["ModFrom"] ?? pi["ModifiedFrom"];
 
                 if (modValue == null)
                 {
-                    pi["ModFrom"] = apiContext?.User?.Identity?.Name;
-                    pi["ModifiedFrom"] = apiContext?.User?.Identity?.Name;
+                    //pi["ModFrom"] = apiContext?.User?.Identity?.Name;
+                    //pi["ModifiedFrom"] = apiContext?.User?.Identity?.Name;
+                    if (true == dataBagDic?.TryGetValue("From", out ho))
+                    {
+                        pi["ModFrom"] = apiContext?.DataBag.From;
+                        pi["ModifiedFrom"] = apiContext?.DataBag.From;
+                    }
+                    //pi["ModFrom"] = apiContext?.DataBag.From;
+                    //pi["ModifiedFrom"] = apiContext?.DataBag.From;
                 }
 
                 if (!string.IsNullOrEmpty(parent))

@@ -1,8 +1,8 @@
-﻿using UCP.Common.Plugin;
+using UCP.Common.Plugin;
 using UCP.Common.Plugin.Attributes;
 using UCP.Common.Plugin.Services;
 
-namespace Natec.Entities
+namespace Bss.Entities
 {
     [DocIgnore]
     public interface IViewCaller
@@ -12,3 +12,4 @@ namespace Natec.Entities
             IApiContext context);
     }
 }
+

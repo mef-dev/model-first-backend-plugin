@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Composition;
 using System.Linq;
 using System.Reflection;
@@ -11,21 +11,8 @@ using UCP.Common.Plugin.Services;
 using Microsoft.Extensions.Logging;
 using UCP.Common.Plugin.Attributes;
 
-namespace Natec.Entities
+namespace Bss.Entities
 {
-    /// <summary>
-    /// Base class for plugins
-    /// </summary>
-    /// <typeparam name="TReq"></typeparam>
-    /// <typeparam name="TSetReq"></typeparam>
-    /// <typeparam name="TSetResp"></typeparam>
-    /// <typeparam name="TResp"></typeparam>
-    /// <typeparam name="TGetWebReq"></typeparam>
-    /// <typeparam name="TGetCallReq"></typeparam>
-    /// <typeparam name="TGetCallResp"></typeparam>
-    /// <typeparam name="TGetWebResp"></typeparam>
-    /// <typeparam name="TProcSet"></typeparam>
-    /// <typeparam name="TWebSet"></typeparam>
      [DocIgnore]
      public class EntityPlugin<TReq,
         TSetReq, 
@@ -56,7 +43,6 @@ namespace Natec.Entities
         //protected static int defaultPostTimeout = 180;
         //protected static int defaultPutTimeout = 180;
         protected IApiContext _apiContext = null;
-
         protected PluginExportMetadata exportMetadata = null;
         protected string packageName = string.Empty;
         protected string entityName { get; set; } = null;
@@ -83,9 +69,6 @@ namespace Natec.Entities
         public virtual IPagedList<IModifiedTag, BaseEntity> Get(Filter filter, string view = null)
         {
             CheckApiContext();
-
-            //CheckForGetFeatures();
-
             ReadConfig(GetCfgName());
             CheckRuntimeState();
 
@@ -143,62 +126,11 @@ namespace Natec.Entities
             string parent = null)
         {
             CheckApiContext();
-            this._apiContext?.Log?.LogInformation("{0}({1}/{2}/{3})::Post: Start with parent/id {4}/{5}", 
-                _selfType.Value.Name,
-                entityName, 
-                exportMetadata?.EntityName,
-                entity?.Id,
-                parent, 
-                entity?.Id);
-
-            //if (!EntitiesSubodinates.ValidRelation(parent?.ToLower(), this.entityName.ToLower()))
-            if (!EntitiesSubordinates.ValidRelation(parent?.ToLower(), this.entityName.ToLower()))
-            {
-                throw new CommonPlatformException($"Invalid relation : {parent}/{this.entityName}")
-                {
-                    StatusCode = Microsoft.AspNetCore.Http.StatusCodes.Status400BadRequest
-                };
-            }
-                //throw new Exception($"Invalid relation : {parent}/{this.entityName}");
-
-            ReadConfig(GetCfgName());
-            CheckRuntimeState();
+            LogPostInformation(lang, entity, parent);
 
             TReq tr = ResolveEntityModel<TReq>(entity);
 
-            /*
-             * Корректировка от 27.07.19
-             * Форсированно меняем null на ноль
-             */
-            CorrectWebModel(tr, null, parent);
-
-            if (!string.IsNullOrEmpty(lang))
-                tr.Lang = lang;
-
-            TSetReq argModel = MappingService.Map<TSetReq>(entity);
-            //CorrectCallSetProcModel(ref argModel);
-            TSetResp argModelRes = null;
-
-            using (var db = new DB(ConnectionStrings.WriteOrDefaultConnection()))
-            {
-                db.PreSqlCommand = this.PreSqlCommand;
-                db.SqlExecParameters = this.SqlExecParameters;
-                try
-                {
-                    _apiContext.Log.LogInformation($"Start call {argModel.StoredProcedureName()} ...");
-                    argModelRes = db.Procedures.CallRequestResponse<TSetReq, TSetResp>(argModel, DefaultPostTimeout);
-                }
-                finally
-                {
-                    _apiContext.Log.LogInformation($"Call of {argModel.StoredProcedureName()} finisjed");
-                }
-            }
-
-            TResp result = MappingService.MapWN<TResp>(argModelRes);
-
-            result?.Clean();
-
-            return result;
+            return Post(lang, tr, parent);
         }
 
         public virtual BaseEntity Put(string id, string lang, BaseEntity entity)
@@ -209,8 +141,8 @@ namespace Natec.Entities
 
             TReq tr = ResolveEntityModel<TReq>(entity);
             /*
-             * Корректировка от 27.07.19
-             * Форсированно меняем null на ноль
+             * ������������� �� 27.07.19
+             * ������������ ������ null �� ����
              */
             CorrectWebModel(tr, null, null);
 
@@ -245,7 +177,7 @@ namespace Natec.Entities
                 };
 
             if (!ApiContextManager.Instance.ValidateContext(context, this))
-                throw new CommonPlatformException("Сontext failed validation")
+                throw new CommonPlatformException("�ontext failed validation")
                 {
                     Source = $"{this.entityName} plugin"
                 };
@@ -260,7 +192,7 @@ namespace Natec.Entities
 
         protected override void ReadConfig(string cfgFileName)
         {
-            this._apiContext?.Log?.LogInformation($"Start read config {cfgFileName}");
+            this._apiContext?.Log?.LogInformation($"|{this.GetHashCode()}|Start read config {cfgFileName}");
             try
             {
                 IConfigurationRoot cfgRoot = ApiContextHelper.GetConfiguration(_apiContext, this);
@@ -281,11 +213,11 @@ namespace Natec.Entities
             }
             catch (Exception e)
             {
-                this._apiContext?.Log?.LogInformation(e, $"Error while read {cfgFileName}");
+                this._apiContext?.Log?.LogInformation(e, $"|{this.GetHashCode()}|Error while read {cfgFileName}");
             }
             finally
             {
-                this._apiContext?.Log?.LogInformation($"Finish read config {cfgFileName}");
+                this._apiContext?.Log?.LogInformation($"|{this.GetHashCode()}|Finish read config {cfgFileName}");
             }
         }
 
@@ -317,6 +249,7 @@ namespace Natec.Entities
 
         public virtual BaseEntity PostEntityAction(string lang, BaseEntity entity, string action, string parent = null)
         {
+            LogPostActionInformation(lang, entity, action, parent);
             if (false == exportMetadata?.Actions?.Contains(action, StringComparer.InvariantCultureIgnoreCase))
             {
                 throw new CommonPlatformException($"Actions list does not contain definitions for the action '{action}'");
@@ -466,7 +399,58 @@ namespace Natec.Entities
 
         public BaseEntity Post(string lang, TReq entity, string parent = null)
         {
-            throw new NotImplementedException();
+            CheckApiContext();
+            LogPostInformation(lang, entity, parent);
+
+            TReq tr = entity;
+
+            if (!EntitiesSubordinates.ValidRelation(parent?.ToLower(), this.entityName.ToLower()))
+            {
+                throw new CommonPlatformException($"Invalid relation : {parent}/{this.entityName}")
+                {
+                    StatusCode = Microsoft.AspNetCore.Http.StatusCodes.Status400BadRequest
+                };
+            }
+            //throw new Exception($"Invalid relation : {parent}/{this.entityName}");
+
+            ReadConfig(GetCfgName());
+            CheckRuntimeState();
+
+            /*
+             * ������������� �� 27.07.19
+             * ������������ ������ null �� ����
+             */
+            CorrectWebModel(tr, null, parent);
+
+            if (!string.IsNullOrEmpty(lang))
+                tr.Lang = lang;
+            _apiContext?.Log.LogInformation($"Start mapping {tr.GetType().Name} -> {typeof(TSetReq).Name}");
+            TSetReq argModel = MappingService.Map<TSetReq>(tr);
+            _apiContext?.Log.LogInformation($"Stop mapping {tr.GetType().Name} -> {typeof(TSetReq).Name}");
+            InspectDirectMapping(tr, argModel);
+            //CorrectCallSetProcModel(ref argModel);
+            TSetResp argModelRes = null;
+
+            using (var db = new DB(ConnectionStrings.WriteOrDefaultConnection(), this._apiContext?.Log))
+            {
+                db.PreSqlCommand = this.PreSqlCommand;
+                db.SqlExecParameters = this.SqlExecParameters;
+                try
+                {
+                    _apiContext.Log.LogInformation($"Start call {argModel.StoredProcedureName()} ...");
+                    argModelRes = db.Procedures.CallRequestResponse<TSetReq, TSetResp>(argModel, DefaultPostTimeout);
+                }
+                finally
+                {
+                    _apiContext.Log.LogInformation($"Call of {argModel.StoredProcedureName()} finished");
+                }
+            }
+
+            TResp result = MappingService.MapWN<TResp>(argModelRes);
+
+            result?.Clean();
+
+            return result;
         }
 
         public BaseEntity Put(string id, string lang, TReq entity)
@@ -478,10 +462,32 @@ namespace Natec.Entities
         {
             throw new NotImplementedException();
         }
-
+        /*
         public IPagedList<IModifiedTag, BaseEntity> Get(Filter filter)
         {
             throw new NotImplementedException();
         }
+        */
+        #region [Logs]
+        internal virtual void LogPostInformation(string lang,
+            BaseEntity entity,
+            string parent = null)
+        {
+            this._apiContext?.Log?.LogInformation($"({this.GetHashCode()}){_selfType.Value.Name}({entityName}/{exportMetadata?.EntityName})::Post: Start with parent/id '{parent}'/'{entity?.Id}'");
+        }
+
+        internal virtual void LogPostActionInformation(string lang,
+            BaseEntity entity,
+            string action,
+            string parent = null)
+        {
+            this._apiContext?.Log?.LogInformation($"({this.GetHashCode()}){_selfType.Value.Name}({entityName}/{exportMetadata?.EntityName})::Post: Start with parent/action/id/ '{parent}'/'{action}'/'{entity?.Id}'");
+        }
+
+        internal virtual void InspectDirectMapping(TReq webModel, TSetReq callModel)
+        {
+
+        }
+        #endregion
     }
 }

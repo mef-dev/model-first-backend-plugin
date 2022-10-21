@@ -1,9 +1,7 @@
-﻿using System;
-using UCP.Common.Plugin.Attributes;
+using System;
 
-namespace Natec.Entities
+namespace Bss.Entities
 {
-    [DocIgnore]
     public class CallProcedureBindContainer
     {
         public Type Set_CallModel_Request { get; set; }

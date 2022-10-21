@@ -1,8 +1,8 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Collections.Generic;
 using UCP.Common.Plugin.Attributes;
 
-namespace Natec.Entities
+namespace Bss.Entities
 {
     [DocIgnore]
     public static class IDictionaryExtensions

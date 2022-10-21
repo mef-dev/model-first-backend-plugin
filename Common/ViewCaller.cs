@@ -1,10 +1,13 @@
-﻿using System.Collections.Generic;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using UCP.Common.Plugin;
 using UCP.Common.Plugin.Attributes;
 using UCP.Common.Plugin.Services;
+using Bss.Entities.Extensions;
+using System.Diagnostics;
 
-namespace Natec.Entities
+namespace Bss.Entities
 {
     [DocIgnore]
     public class ViewCaller<TGetWebReq,
@@ -18,7 +21,7 @@ namespace Natec.Entities
             where TGetCallResp : class
             where TGetWebResp : class, IModifiedTag
             where TProcSet : class
-            where TWebSet : BaseEntity
+            where TWebSet : BaseEntity, IPropertyIndexer
     {
         public virtual IPagedList<IModifiedTag, BaseEntity> Get(Filter filter, 
             string viewName, 
@@ -26,22 +29,27 @@ namespace Natec.Entities
         {
             TGetWebReq getWebModel = null;
 
-            //Если фильтр НЕ пустой
-            //Спробуємо його замапити на TGetWebReq
+            //���� ������ �� ������
+            //�������� ���� �������� �� TGetWebReq
             if (!string.IsNullOrEmpty(filter.filter))
             {
-                getWebModel = ConvertService.Convert<TGetWebReq>(filter.filter);
-                getWebModel?.Clean();
+                try
+                {
+                    getWebModel = ConvertService.Convert<TGetWebReq>(filter.filter);
+                }
+                catch (Exception e)
+                {
+                    throw new CommonPlatformException($"Error while parse  filter", e);
+                }
             }
-            else
-            {
-                //накладываем на сущ. модель данные из Filter
-                //или создаем новую из Filter
 
-                getWebModel = (getWebModel != null) ?
-                    MappingService.MapperWN.Map<Filter, TGetWebReq>(filter, getWebModel) :
-                    MappingService.Mapper.Map<TGetWebReq>(filter);
-            }
+            //����������� �� ���. ������ ������ �� Filter
+            //��� ������� ����� �� Filter
+            getWebModel = (getWebModel != null) ?
+                MappingService.MapperWN.Map<Filter, TGetWebReq>(filter, getWebModel) :
+                MappingService.Mapper.Map<TGetWebReq>(filter);
+
+            getWebModel?.Clean();
 
             BasePlugin.CorrectWebModelBase(getWebModel, context);
 
@@ -68,10 +76,32 @@ namespace Natec.Entities
 
             TGetWebResp result = MappingService.MapWN<TGetWebResp>(argModelRes);
             (result as BaseEntity)?.Clean();
+            long? total = null;
+            try
+            {
+                var first = resultSet.FirstOrDefault();
+                if (first != null)
+                {
+                    total = (long?)first.SafeGet<int>("Total");
+                }
+            }
+            catch(Exception exc)
+            {
+                Debug.WriteLine($"Error while try to get total : {exc}");
+            }
+
+            if (!total.HasValue)
+                total = resultSet?.Count();
+
+            /*
+            if (!total.HasValue)
+                total = 0;
+            */
 
             return new PagedList<IModifiedTag, BaseEntity>(resultSet.AsQueryable(), filter.PageIndex, filter.PageSize)
             {
-                Result = result as IModifiedTag
+                Result = result as IModifiedTag,
+                TotalCount = total.GetValueOrDefault()
             };
         }
     }

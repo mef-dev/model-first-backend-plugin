@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -8,7 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using UCP.Common.Plugin.Attributes;
 
-namespace Natec.Entities
+namespace Bss.Entities
 {
     [DocIgnore]
     public static class Exceptions
@@ -17,11 +17,11 @@ namespace Natec.Entities
         private const int DeadlockErrorNumber = 1205;
         private const int LockingErrorNumber = 1222;
         private const int UpdateConflictErrorNumber = 3960;
-        //для ретрай - функционала
+        //��� ������ - �����������
         private const int TimeoutExpiredErrorNumber = -2;
         private const int CouldNotOpenConnectionErrorNumber = 53;
         private const int TransportFailErrorNumber = 121;
-        //вот тут не надо ретрай
+        //��� ��� �� ���� ������
         private const int HandledDeadlockErrorNumber = 50999;
         private const int SQLErrorNumber = 50000;
 
@@ -55,8 +55,8 @@ namespace Natec.Entities
             Stopwatch sw = new Stopwatch();
             try
             {
-                    sw.Start();
-                    action();
+                sw.Start();
+                action();
             }
             catch (System.Data.SqlTypes.SqlTypeException sqlTypeException)
             {
@@ -64,7 +64,6 @@ namespace Natec.Entities
             }
             catch (System.Data.SqlClient.SqlException sqlException)
             {
-                sw.Stop();
                 throw sqlException.Handle(sw.ElapsedMilliseconds);
             }
             catch (Exception exception)
@@ -144,7 +143,7 @@ namespace Natec.Entities
 
             if (sqlException.Number == Exceptions.HandledDeadlockErrorNumber)
             {
-                return new UCP.Common.Plugin.ServiceUnavailableException($"Системная ошибка с кодом {sqlException.Number}: необходим повтор операции")
+                return new UCP.Common.Plugin.ServiceUnavailableException($"��������� ������ � ����� {sqlException.Number}: ��������� ������ ��������")
                 {
                     LevelMessage = sqlException.Class,
                     Number = sqlException.Number,
@@ -162,32 +161,33 @@ namespace Natec.Entities
             {
                 #region [Examples]
                 /*
-        var str1 = @"[ {""LevelMessage"":17,""ErrNumber"":50227,""Message"":""Ошибка определения типа узла дерева(Abonents)"",""State"":1,""HelpLink"":null,""Xml"":null,
-""Data"":[ {""LevelMessage"":17,""ErrNumber"":50227,""Message"":""Вложенная ошибка"",""State"":1,""HelpLink"":null,""Xml"":null,
+        var str1 = @"[ {""LevelMessage"":17,""ErrNumber"":50227,""Message"":""������ ����������� ���� ���� ������(Abonents)"",""State"":1,""HelpLink"":null,""Xml"":null,
+""Data"":[ {""LevelMessage"":17,""ErrNumber"":50227,""Message"":""��������� ������"",""State"":1,""HelpLink"":null,""Xml"":null,
 ""Data"":null,""ResolveUrl"":null}],""ResolveUrl"":null}]";
         */
                 /*
                  [ {"LevelMessage":17,
                 "ErrNumber":50201,
-                "Message":"Ошибка добавления адреса абоненту: ",
+                "Message":"������ ���������� ������ ��������: ",
                 "State":1,
                 "HelpLink":null,
                 "Xml":null,
-                "Data":[ {"LevelMessage":16,"ErrNumber":50213,"Message":"Не найден район (Districts): - по заданному ИД; Dstr_ID=81040Prov_ID=26,IsExternalID=1 ","State":1,"HelpLink":null,"Xml":null,"Data":null,"ResolveUrl":null}],
+                "Data":[ {"LevelMessage":16,"ErrNumber":50213,"Message":"�� ������ ����� (Districts): - �� ��������� ��; Dstr_ID=81040Prov_ID=26,IsExternalID=1 ","State":1,"HelpLink":null,"Xml":null,"Data":null,"ResolveUrl":null}],
                 "ResolveUrl":null}]
                  */
                 /*
 Cannot insert the value NULL into column 'PartitionCriteria', table 'Unibill_dev_etalon.dbo.SysLog'; column does not allow nulls. INSERT fails.
-{"LevelMessage": "17","ErrNumber": "50268","Message": "Не найден узел дерева верхнего уровня: ","State": "1","HelpLink": "","Xml": "","Data":{},"ResolveUrl": ""}
+{"LevelMessage": "17","ErrNumber": "50268","Message": "�� ������ ���� ������ �������� ������: ","State": "1","HelpLink": "","Xml": "","Data":{},"ResolveUrl": ""}
 The statement has been terminated.                  
               */
                 /*
-                  { "source":"Core .Net SqlClient Data Provider","number":50000,"class":17,"state":1,"message":"{\"LevelMessage\": \"17\",\"ErrNumber\": \"50243\",\"Message\": \"Ошибка изменения соглашения тарифного плана (Agreements): \",\"State\": \"1\",\"HelpLink\": \"\",\"Xml\": \"50243\",\"Data\":(@Agr_ID,@Grt_ID,@Rpr_ID,@DateStart,@Abn_ID)=(0,1559,-1,'2020-07-20 00:00:00.000',11132304 {\"LevelMessage\": \"17\",\"ErrNumber\": \"50249\",\"Message\": \"Ошибка определения внутреннего номера (Extentions): \",\"State\": \"1\",\"HelpLink\": \"\",\"Xml\": \"50249\",\"Data\":{},\"ResolveUrl\": \"\"},\"ResolveUrl\": \"\"}","status":0}
+                  { "source":"Core .Net SqlClient Data Provider","number":50000,"class":17,"state":1,"message":"{\"LevelMessage\": \"17\",\"ErrNumber\": \"50243\",\"Message\": \"������ ��������� ���������� ��������� ����� (Agreements): \",\"State\": \"1\",\"HelpLink\": \"\",\"Xml\": \"50243\",\"Data\":(@Agr_ID,@Grt_ID,@Rpr_ID,@DateStart,@Abn_ID)=(0,1559,-1,'2020-07-20 00:00:00.000',11132304 {\"LevelMessage\": \"17\",\"ErrNumber\": \"50249\",\"Message\": \"������ ����������� ����������� ������ (Extentions): \",\"State\": \"1\",\"HelpLink\": \"\",\"Xml\": \"50249\",\"Data\":{},\"ResolveUrl\": \"\"},\"ResolveUrl\": \"\"}","status":0}
 
   */
                 #endregion
 
-                var sqlExceptionMessage = sqlException.Errors.Cast<SqlError>().Where(se => (se.Class > 0) &&
+                var sqlExceptionMessage = sqlException.Errors.Cast<SqlError>()
+                    .Where(se => (se.Class > 0) &&
                     (se.Message.Trim().StartsWith("{")) &&
                     (se.Message.Trim().EndsWith("}"))).
                     Select(se => se.Message).
@@ -255,40 +255,40 @@ The statement has been terminated.
         private static int ResolveActualStatusCode(SqlException sqlException)
         {
             int actualStatusCode = StatusCodes.Status500InternalServerError;
-            //Ошибка 503 - TimeoutExpiredErrorNumber ИЛИ Количество ретраев исчерпано и НЕ DeadLockFeatures
-            //Ошибка 408 - DeadLockFeatures И Количество ретраев исчерпано
-            //пс. этот код в принципе будет выполняться только после исчерпания попыток
-            //если дедлок
+            //������ 503 - TimeoutExpiredErrorNumber ��� ���������� ������� ��������� � �� DeadLockFeatures
+            //������ 408 - DeadLockFeatures � ���������� ������� ���������
+            //��. ���� ��� � �������� ����� ����������� ������ ����� ���������� �������
+            //���� ������
             if (sqlException.IsDeadLockException())
                 return StatusCodes.Status408RequestTimeout;
             else
-            if (sqlException.Number == TimeoutExpiredErrorNumber) // Истекло время ожидание 
+            if (sqlException.Number == TimeoutExpiredErrorNumber) // ������� ����� �������� 
                 return StatusCodes.Status503ServiceUnavailable;
             else
             /*
-            //если дедлок или таймаут
+            //���� ������ ��� �������
             if (sqlException.IsDeadLockException() || sqlException.IsRetryNeeded())
                 return StatusCodes.Status408RequestTimeout;
             else
-            if (sqlException.Number == -2) // Истекло время ожидание 
+            if (sqlException.Number == -2) // ������� ����� �������� 
                 return StatusCodes.Status503ServiceUnavailable;
             else
             */
-            if (sqlException.Number == 50101 || sqlException.Number == 50100 || sqlException.Number == 50182)	// Значит, что произошла не фатальная ошибка.
+            if (sqlException.Number == 50101 || sqlException.Number == 50100 || sqlException.Number == 50182)	// ������, ��� ��������� �� ��������� ������.
             {
             }
             else
-            if ((sqlException.Class >= 12 && sqlException.Class <= 14) || (sqlException.Class >= 18 && sqlException.Class <= 24))	// Значит, что произошла ошибка, из-за которой соединение разорвано. Ощибки с классом 17 - обработаннЫе нами
-            {
-                return StatusCodes.Status503ServiceUnavailable;
-            }
-            else
-            if (sqlException.Class == 11 || sqlException.Class == 15 || sqlException.Class == 16)	// Значит, что произошла ошибка.
+            if ((sqlException.Class >= 12 && sqlException.Class <= 14) || (sqlException.Class >= 18 && sqlException.Class <= 24))	// ������, ��� ��������� ������, ��-�� ������� ���������� ���������. ������ � ������� 17 - ������������ ����
             {
                 return StatusCodes.Status503ServiceUnavailable;
             }
             else
-            if (sqlException.Number >= 0 && sqlException.Number <= 10)	// Значит, что произошла не фатальная ошибка.
+            if (sqlException.Class == 11 || sqlException.Class == 15 || sqlException.Class == 16)	// ������, ��� ��������� ������.
+            {
+                return StatusCodes.Status503ServiceUnavailable;
+            }
+            else
+            if (sqlException.Number >= 0 && sqlException.Number <= 10)	// ������, ��� ��������� �� ��������� ������.
             {
             }
             else

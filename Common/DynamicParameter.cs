@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Data;
 using UCP.Common.Plugin.Attributes;
 
-namespace Natec.Entities
+namespace Bss.Entities
 {
     [DocIgnore]
     public class DynamicParameter
@@ -23,6 +23,7 @@ namespace Natec.Entities
         }
         public DbType DBType { get;set; }
         public ParameterDirection Direction { get; set; }
+        public int? Size { get; set; }
 
         public DynamicParameter(Func<object> getter,
             Action<object> setter)
