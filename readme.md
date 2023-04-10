@@ -10,7 +10,7 @@ For more information on MEF.DEV, see the [Developer's Guide](https://mef.dev/en/
 
 ### Build Status
 
-The current development branch of MEF.DEV.Common.Plugin is `master`. Changes in `master` will go into a future update of MEF.DEV Model-First project template, the current release MEF.DEV.Common.Plugin is 1.3.1.
+The current development branch of MEF.DEV.Common.Plugin is `master`. Changes in `master` will go into a future update of MEF.DEV Model-First project template, the current release MEF.DEV.Common.Plugin is 1.3.4.
 
 ## Building
 
@@ -59,18 +59,17 @@ To complete this operation, you will need to log on to mef.dev platform. The log
 Before you contribute, please read through the developer guides
 
 * **Developer Guide on:**
-   - [First Backend plugin](https://mef.dev/en/backend_uIs_plugin/first_backend_plugin.php)
-   - [First UI plugin](https://mef.dev/en/backend_uIs_plugin/first_ui_plugin.php)
-   - [Video lessons](https://youtube.com/playlist?list=PLWtWlDCLjp8D8htSnSd0lreO5-w3pfli4)
+   - [First Backend plugin](https://mef.dev/dev_guides/first_backend_plugin.md)
+   - [First UI plugin](https://mef.dev/dev_guides/first_ui_plugin.md)
 
-Looking for something to work on? This group of [MEF.DEV project](https://mef.dev/en/member-login.php) is a great place to start a discussion.
+Looking for something to work on? This group of [MEF.DEV project](https://mef.dev/member-login.php) is a great place to start a discussion.
 You are also encouraged to start a discussion by filing an issue or creating a gist.
 
 ### MSBuild Components
 
 * **PluginProjectGenerator**. The tool that is uses to auto-generate source code into MEF.DEV projects, provided by MEF.DEV authors.
 
-* **UCP.Common.Plugin**. The [UCP.Common.Plugin](https://nuget.mef.dev/packages/UCP.Common.Plugin) nuget contains a description of the iBackendPlugin and iPluginСonfig interfaces, as well as the base class BaseEntity, which are part of the contract the Managed Extensibility Framework infrastructure, namely [Export ("plugin_name", typeof (IBackendPlugin))] and required for each self-development Plugin for integration into the mef.dev serverless platform..
+* **MEF.DEV.Common.Plugin**. The [MEF.DEV.Common.Plugin](https://www.nuget.org/packages/MEF.DEV.Common.Plugin) nuget contains a description of the iBackendPlugin and iPluginСonfig interfaces, as well as the base class BaseEntity, which are part of the contract the Managed Extensibility Framework infrastructure, namely [Export ("plugin_name", typeof (IBackendPlugin))] and required for each self-development Plugin for integration into the mef.dev serverless platform..
 
 ### License
 
