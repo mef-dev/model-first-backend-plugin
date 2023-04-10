@@ -36,7 +36,7 @@ MSBuild can be run on Unix systems that support .NET Core. Set-up instructions c
 
 To complete this operation, you will need to log on to mef.dev platform. The logon process is the registration required, to register please follow the link [invite to preview](https://preview.mef.dev/rflnk/9fJaM6YPHEo5Dc1pCMTHO5ynrm2OON6atMe3df%2fSaM5F%2bJeD%2bDywFisySLXJiGv4)
 1. Login to preview version of mef.dev platform on preview.mef.dev
-2. [Create](https://preview.mef.dev/store/service/create) new package `plugin_name` into mef.dev platform - the minimal set of information is:
+2. [Create](https://preview.mef.dev/console/services/create) new package `plugin_name` into mef.dev platform - the minimal set of information is:
    - PLUGIN MEFNAME - the unique (within the ALIAS) Plugin name, must be equal to the namespace from the build solution above (in this case value = `plugin_name`)
    - ALIAS - a unique logical name that unites all entities and actions of one subject area (business domain), if unknown - please input value in `ddmmyyhhmm` format
    - SERVICE NAME - the unique friendly Plugin name for UI, if unknown - please input specific to your build `plugin_name`
